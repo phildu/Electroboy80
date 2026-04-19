@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EB80 — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Anton&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pink:#FF006E; --yellow:#FFFF00; --blue:#00B4FF; --cyan:#00FFFF;
+  --black:#000; --dark:#0a0a0a; --mid:#111; --panel:#161616;
+  --border:#222; --white:#F0F0F0; --muted:#666;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--dark);color:var(--white);font-family:'IBM Plex Mono',monospace;display:flex;min-height:100vh;overflow-x:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-height:100vh;background:var(--black);border-right:2px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:24px 20px;border-bottom:2px solid var(--border);}
+.sidebar-logo .logo-text{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:-1px;}
+.sidebar-logo .logo-text span{color:var(--pink);}
+.sidebar-logo .role-badge{margin-top:6px;display:inline-block;background:var(--pink);color:var(--black);font-family:'VT323',monospace;font-size:13px;letter-spacing:3px;padding:2px 10px;}
+.nav-section{padding:16px 0;}
+.nav-label{font-size:9px;letter-spacing:5px;color:var(--muted);padding:0 20px 8px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.nav-item:hover{color:var(--white);background:rgba(255,255,255,0.03);}
+.nav-item.active{color:var(--yellow);border-left-color:var(--yellow);background:rgba(255,255,0,0.04);}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding:20px;border-top:2px solid var(--border);}
+.logout-btn{width:100%;background:transparent;border:2px solid var(--border);color:var(--muted);font-family:'VT323',monospace;font-size:16px;letter-spacing:3px;padding:8px;cursor:pointer;transition:all 0.15s;text-transform:uppercase;}
+.logout-btn:hover{border-color:var(--pink);color:var(--pink);}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:var(--black);border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 30px;flex-shrink:0;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'VT323',monospace;font-size:22px;letter-spacing:3px;color:var(--yellow);}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.btn{font-family:'VT323',monospace;font-size:16px;letter-spacing:2px;padding:7px 20px;cursor:pointer;transition:all 0.15s;text-transform:uppercase;border:2px solid;}
+.btn-primary{background:var(--pink);border-color:var(--pink);color:var(--black);}
+.btn-primary:hover{background:transparent;color:var(--pink);}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--white);color:var(--white);}
+.btn-yellow{background:var(--yellow);border-color:var(--yellow);color:var(--black);}
+.btn-yellow:hover{background:transparent;color:var(--yellow);}
+.btn-blue{background:transparent;border-color:var(--blue);color:var(--blue);}
+.btn-blue:hover{background:var(--blue);color:var(--black);}
+.btn-sm{font-size:13px;padding:4px 12px;}
+
+.content{flex:1;padding:30px;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;}
+.stat-card{background:var(--panel);border:2px solid var(--border);padding:20px 22px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.pink::before{background:var(--pink);}
+.stat-card.yellow::before{background:var(--yellow);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.cyan::before{background:var(--cyan);}
+.stat-value{font-family:'Anton',sans-serif;font-size:42px;line-height:1;letter-spacing:-2px;margin-bottom:4px;}
+.stat-label{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;}
+.stat-delta{font-family:'VT323',monospace;font-size:16px;margin-top:8px;}
+.stat-delta.up{color:#00ff88;}
+.stat-delta.down{color:var(--pink);}
+
+/* CARDS */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title{font-family:'VT323',monospace;font-size:22px;letter-spacing:3px;color:var(--yellow);}
+
+.card{background:var(--panel);border:2px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.card-header{padding:16px 20px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-body{padding:20px;}
+
+/* TABLE */
+.table{width:100%;border-collapse:collapse;}
+.table th{font-size:9px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;padding:10px 14px;border-bottom:2px solid var(--border);text-align:left;}
+.table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{display:inline-block;font-family:'VT323',monospace;font-size:14px;letter-spacing:2px;padding:2px 10px;text-transform:uppercase;}
+.badge-pink{background:rgba(255,0,110,0.15);color:var(--pink);border:1px solid var(--pink);}
+.badge-yellow{background:rgba(255,255,0,0.1);color:var(--yellow);border:1px solid var(--yellow);}
+.badge-blue{background:rgba(0,180,255,0.1);color:var(--blue);border:1px solid var(--blue);}
+.badge-green{background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid #00ff88;}
+.badge-gray{background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid var(--border);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;}
+.form-input,.form-select,.form-textarea{background:var(--mid);border:2px solid var(--border);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 14px;outline:none;transition:border-color 0.15s;width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--yellow);}
+.form-textarea{resize:vertical;min-height:100px;}
+.form-select option{background:var(--mid);}
+
+/* PUBLISH PANEL */
+.publish-panel{background:var(--mid);border:2px solid var(--border);padding:20px;margin-top:16px;}
+.publish-title{font-family:'VT323',monospace;font-size:18px;letter-spacing:3px;color:var(--yellow);margin-bottom:14px;}
+.rs-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
+.rs-toggle{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);cursor:pointer;transition:all 0.15s;}
+.rs-toggle.active{border-color:var(--yellow);background:rgba(255,255,0,0.05);}
+.rs-toggle .rs-icon{font-size:22px;}
+.rs-toggle .rs-name{font-family:'VT323',monospace;font-size:13px;letter-spacing:2px;color:var(--muted);}
+.rs-toggle.active .rs-name{color:var(--yellow);}
+
+/* MEDIA UPLOAD */
+.upload-zone{border:2px dashed var(--border);padding:30px;text-align:center;cursor:pointer;transition:all 0.15s;position:relative;}
+.upload-zone:hover{border-color:var(--yellow);background:rgba(255,255,0,0.02);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-icon{font-size:32px;margin-bottom:8px;}
+.upload-text{font-family:'VT323',monospace;font-size:18px;letter-spacing:2px;color:var(--muted);}
+.media-previews{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.media-thumb{width:80px;height:80px;object-fit:cover;border:2px solid var(--border);}
+
+/* ACTIVITY FEED */
+.activity-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.activity-content{flex:1;font-size:12px;line-height:1.6;color:#aaa;}
+.activity-content strong{color:var(--white);}
+.activity-time{font-size:10px;color:var(--muted);white-space:nowrap;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:2px solid var(--yellow);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:20px 24px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'VT323',monospace;font-size:24px;letter-spacing:3px;color:var(--yellow);}
+.modal-close{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;transition:color 0.15s;}
+.modal-close:hover{color:var(--pink);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:2px solid var(--border);display:flex;gap:12px;justify-content:flex-end;}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--panel);border:2px solid;padding:12px 20px;font-family:'VT323',monospace;font-size:18px;letter-spacing:2px;animation:toastin 0.3s ease;display:flex;align-items:center;gap:10px;}
+.toast.success{border-color:#00ff88;color:#00ff88;}
+.toast.error{border-color:var(--pink);color:var(--pink);}
+.toast.info{border-color:var(--blue);color:var(--blue);}
+@keyframes toastin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* USERS */
+.user-row{display:flex;align-items:center;gap:14px;}
+.avatar{width:36px;height:36px;border-radius:0;background:var(--mid);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:14px;flex-shrink:0;}
+
+/* PROGRESS */
+.progress-bar{height:4px;background:var(--mid);margin-top:4px;}
+.progress-fill{height:100%;background:var(--pink);transition:width 0.5s ease;}
+
+/* GRID 2COL */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+
+/* MINI CHART (CSS only) */
+.mini-chart{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px;}
+.mini-bar{flex:1;background:var(--pink);opacity:0.6;border-top:2px solid var(--pink);transition:opacity 0.2s;}
+.mini-bar:hover{opacity:1;}
+
+.schedule-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--black);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">ELECTRO<span>BOY</span>80</div>
+    <div class="role-badge">★ ADMIN</div>
+  </div>
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">⬛</span> Dashboard</div>
+      <div class="nav-item" onclick="showPage('content')"><span class="icon">✦</span> Contenu</div>
+      <div class="nav-item" onclick="showPage('events')"><span class="icon">◈</span> Événements</div>
+      <div class="nav-item" onclick="showPage('media')"><span class="icon">◉</span> Médiathèque</div>
+      <div class="nav-item" onclick="showPage('publish')"><span class="icon">▶</span> Publication RS</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Communauté</div>
+      <div class="nav-item" onclick="showPage('fans')"><span class="icon">♦</span> Fans</div>
+      <div class="nav-item" onclick="showPage('partners')"><span class="icon">◆</span> Partenaires</div>
+      <div class="nav-item" onclick="showPage('messages')"><span class="icon">◇</span> Messages</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Système</div>
+      <div class="nav-item" onclick="showPage('settings')"><span class="icon">⚙</span> Paramètres</div>
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="logout-btn" onclick="showToast('Déconnexion...','info')">⏻ Déconnexion</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-title" id="page-title">// DASHBOARD</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showPage('publish')">▶ Publier sur RS</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('new-content')">+ Nouveau contenu</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card pink">
+          <div class="stat-value" id="stat-fans">247</div>
+          <div class="stat-label">Fans inscrits</div>
+          <div class="stat-delta up" id="stat-fans-delta">↑ +12 cette semaine</div>
+          <div class="mini-chart" id="chart-fans"></div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-value" id="stat-events">3</div>
+          <div class="stat-label">Événements actifs</div>
+          <div class="stat-delta up">↑ 1 ce mois</div>
+          <div class="mini-chart" id="chart-events"></div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-value" id="stat-partners">8</div>
+          <div class="stat-label">Partenaires</div>
+          <div class="stat-delta up">↑ +2 nouveaux</div>
+          <div class="mini-chart" id="chart-partners"></div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-value" id="stat-posts">14</div>
+          <div class="stat-label">Posts publiés</div>
+          <div class="stat-delta up">↑ +5 ce mois</div>
+          <div class="mini-chart" id="chart-posts"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="section-title">Activité récente</div>
+          </div>
+          <div class="card-body" id="activity-feed">
+            <!-- filled by JS -->
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="section-title">Prochains concerts</div>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('events')">Voir tout</button>
+          </div>
+          <div class="card-body" id="upcoming-events-widget">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:0">
+        <div class="card-header">
+          <div class="section-title">Publications récentes</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('new-content')">+ Créer</button>
+        </div>
+        <div class="card-body">
+          <table class="table" id="recent-posts-table">
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Type</th>
+                <th>Réseaux</th>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="posts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CONTENT ===== -->
+    <div class="page" id="page-content">
+      <div class="section-header">
+        <div class="section-title">// GESTION DU CONTENU</div>
+        <button class="btn btn-primary" onclick="openModal('new-content')">+ Nouveau contenu</button>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr><th>Titre</th><th>Type</th><th>Auteur</th><th>Réseaux</th><th>Publié le</th><th>Statut</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="content-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EVENTS ===== -->
+    <div class="page" id="page-events">
+      <div class="section-header">
+        <div class="section-title">// ÉVÉNEMENTS</div>
+        <button class="btn btn-primary" onclick="openModal('new-event')">+ Nouvel événement</button>
+      </div>
+      <div id="events-list"></div>
+    </div>
+
+    <!-- ===== MEDIA ===== -->
+    <div class="page" id="page-media">
+      <div class="section-header">
+        <div class="section-title">// MÉDIATHÈQUE</div>
+        <button class="btn btn-primary" onclick="document.getElementById('bulk-upload').click()">+ Uploader</button>
+      </div>
+      <input type="file" id="bulk-upload" multiple accept="image/*,video/*" style="display:none" onchange="handleBulkUpload(this)">
+      <div class="card">
+        <div class="card-body">
+          <div id="media-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
+          <div id="media-empty" style="text-align:center;padding:60px;color:var(--muted);font-family:'VT323',monospace;font-size:20px;letter-spacing:3px;">
+            AUCUN MÉDIA — UPLOADEZ DES FICHIERS
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PUBLISH RS ===== -->
+    <div class="page" id="page-publish">
+      <div class="section-header">
+        <div class="section-title">// PUBLICATION RÉSEAUX SOCIAUX</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="section-title">Composer un post</div></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:14px">
+              <label class="form-label">Contenu du post</label>
+              <textarea class="form-textarea" id="rs-text" placeholder="Écris ton message ici..." style="min-height:120px"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label class="form-label">Visuel (optionnel)</label>
+              <div class="upload-zone" style="padding:16px">
+                <input type="file" accept="image/*" onchange="previewRsImage(this)">
+                <div class="upload-text">📎 Ajouter une image</div>
+                <img id="rs-preview" style="display:none;max-height:200px;max-width:100%;margin-top:10px;border:2px solid var(--border)">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label class="form-label">Programmer (optionnel)</label>
+              <input type="datetime-local" class="form-input" id="rs-schedule">
+            </div>
+            <div class="publish-panel">
+              <div class="publish-title">// PUBLIER SUR</div>
+              <div class="rs-grid">
+                <div class="rs-toggle active" id="rs-facebook" onclick="toggleRS(this,'Facebook')">
+                  <div class="rs-icon">📘</div>
+                  <div class="rs-name">Facebook</div>
+                </div>
+                <div class="rs-toggle active" id="rs-instagram" onclick="toggleRS(this,'Instagram')">
+                  <div class="rs-icon">📸</div>
+                  <div class="rs-name">Instagram</div>
+                </div>
+                <div class="rs-toggle" id="rs-tiktok" onclick="toggleRS(this,'TikTok')">
+                  <div class="rs-icon">🎵</div>
+                  <div class="rs-name">TikTok</div>
+                </div>
+                <div class="rs-toggle" id="rs-youtube" onclick="toggleRS(this,'YouTube')">
+                  <div class="rs-icon">▶️</div>
+                  <div class="rs-name">YouTube</div>
+                </div>
+                <div class="rs-toggle" id="rs-spotify" onclick="toggleRS(this,'Spotify')">
+                  <div class="rs-icon">🎧</div>
+                  <div class="rs-name">Spotify</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-yellow" style="flex:1" onclick="publishNow()">▶ PUBLIER MAINTENANT</button>
+                <button class="btn btn-blue" style="flex:1" onclick="schedulePost()">⏱ PROGRAMMER</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="section-title">Publications programmées</div></div>
+          <div class="card-body" id="scheduled-posts">
+            <!-- filled by JS -->
+          </div>
+          <div class="card-header" style="margin-top:0"><div class="section-title">Historique RS</div></div>
+          <div class="card-body" id="rs-history">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FANS ===== -->
+    <div class="page" id="page-fans">
+      <div class="section-header">
+        <div class="section-title">// FANS (MEMBRES)</div>
+        <button class="btn btn-ghost" onclick="exportCSV('fans')">↓ Export CSV</button>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card pink"><div class="stat-value" id="fans-total">247</div><div class="stat-label">Total fans</div></div>
+        <div class="stat-card yellow"><div class="stat-value">89</div><div class="stat-label">Alertes concerts</div></div>
+        <div class="stat-card blue"><div class="stat-value">34</div><div class="stat-label">Contenu exclusif</div></div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="table">
+            <thead><tr><th>Fan</th><th>Email</th><th>Inscrit le</th><th>Abonnements</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="fans-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PARTNERS ===== -->
+    <div class="page" id="page-partners">
+      <div class="section-header">
+        <div class="section-title">// PARTENAIRES</div>
+        <button class="btn btn-primary" onclick="openModal('new-partner')">+ Nouveau partenaire</button>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="table">
+            <thead><tr><th>Partenaire</th><th>Type</th><th>Contact</th><th>Depuis</th><th>Accès</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="partners-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MESSAGES ===== -->
+    <div class="page" id="page-messages">
+      <div class="section-title" style="margin-bottom:16px">// MESSAGES & DEMANDES</div>
+      <div id="messages-list"></div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="section-title" style="margin-bottom:16px">// PARAMÈTRES</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="section-title">Connexions RS</div></div>
+          <div class="card-body">
+            <div id="rs-connections"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="section-title">Profil artiste</div></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">Nom d'artiste</label>
+              <input class="form-input" value="ELECTROBOY 80">
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">Bio courte</label>
+              <textarea class="form-textarea" style="min-height:80px">Guitare saturée · Voix des cavernes · 170 BPM · Cheap. Primitif. Sauvage.</textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">Email de contact</label>
+              <input class="form-input" value="jacques.toinard@sfr.fr">
+            </div>
+            <button class="btn btn-yellow" onclick="showToast('Profil sauvegardé ✓','success')">Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ===== MODALS ===== -->
+
+<!-- New Content Modal -->
+<div class="modal-overlay" id="modal-new-content">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">// NOUVEAU CONTENU</div>
+      <button class="modal-close" onclick="closeModal('new-content')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Titre</label>
+          <input class="form-input" id="nc-title" placeholder="Titre du contenu...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="nc-type">
+            <option value="post">Post</option>
+            <option value="event">Événement</option>
+            <option value="news">News</option>
+            <option value="exclusive">Contenu Exclusif</option>
+            <option value="press">Kit Presse</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Audience</label>
+          <select class="form-select" id="nc-audience">
+            <option value="all">Tout le monde</option>
+            <option value="fans">Fans uniquement</option>
+            <option value="partners">Partenaires uniquement</option>
+            <option value="vip">VIP / Exclusif</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="nc-body" placeholder="Contenu..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Médias</label>
+          <div class="upload-zone">
+            <input type="file" multiple accept="image/*,video/*" onchange="previewModalMedia(this)">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Glisser des fichiers ici</div>
+          </div>
+          <div class="media-previews" id="modal-media-previews"></div>
+        </div>
+      </div>
+      <div class="publish-panel">
+        <div class="publish-title">// PUBLIER SUR</div>
+        <div class="rs-grid">
+          <div class="rs-toggle active" onclick="this.classList.toggle('active')"><div class="rs-icon">📘</div><div class="rs-name">Facebook</div></div>
+          <div class="rs-toggle active" onclick="this.classList.toggle('active')"><div class="rs-icon">📸</div><div class="rs-name">Instagram</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">🎵</div><div class="rs-name">TikTok</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">▶️</div><div class="rs-name">YouTube</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">🎧</div><div class="rs-name">Spotify</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-content')">Annuler</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveContent('draft')">Brouillon</button>
+      <button class="btn btn-yellow" onclick="saveContent('published')">▶ Publier</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Event Modal -->
+<div class="modal-overlay" id="modal-new-event">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">// NOUVEL ÉVÉNEMENT</div>
+      <button class="modal-close" onclick="closeModal('new-event')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Nom de l'événement</label>
+          <input class="form-input" id="ev-name" placeholder="Ex: Concert Lyon - Brasserie du Pilat">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="ev-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure</label>
+          <input type="time" class="form-input" id="ev-time" value="21:00">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Lieu</label>
+          <input class="form-input" id="ev-venue" placeholder="Nom de la salle">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Ville</label>
+          <input class="form-input" id="ev-city" placeholder="Ville, Pays">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Lien billetterie (optionnel)</label>
+          <input class="form-input" id="ev-tickets" placeholder="https://...">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="ev-desc" placeholder="Infos complémentaires..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Affiche / Visuel</label>
+          <div class="upload-zone">
+            <input type="file" accept="image/*">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">Upload de l'affiche</div>
+          </div>
+        </div>
+      </div>
+      <div class="publish-panel">
+        <div class="publish-title">// AUTO-PUBLIER SUR</div>
+        <div class="rs-grid">
+          <div class="rs-toggle active" onclick="this.classList.toggle('active')"><div class="rs-icon">📘</div><div class="rs-name">Facebook</div></div>
+          <div class="rs-toggle active" onclick="this.classList.toggle('active')"><div class="rs-icon">📸</div><div class="rs-name">Instagram</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">🎵</div><div class="rs-name">TikTok</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">▶️</div><div class="rs-name">YouTube</div></div>
+          <div class="rs-toggle" onclick="this.classList.toggle('active')"><div class="rs-icon">🎧</div><div class="rs-name">Spotify</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-event')">Annuler</button>
+      <button class="btn btn-yellow" onclick="saveEvent()">▶ Créer & Publier</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Partner Modal -->
+<div class="modal-overlay" id="modal-new-partner">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">// NOUVEAU PARTENAIRE</div>
+      <button class="modal-close" onclick="closeModal('new-partner')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nom / Structure</label><input class="form-input" id="pt-name" placeholder="Nom du partenaire"></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-select" id="pt-type">
+            <option>Salle de concert</option><option>Label</option><option>Sponsor</option><option>Média</option><option>Booking</option><option>Autre</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="pt-email" placeholder="contact@..."></div>
+        <div class="form-group full"><label class="form-label">Accès plateforme</label>
+          <select class="form-select" id="pt-access">
+            <option value="stats">Stats seulement</option>
+            <option value="press">Kit presse</option>
+            <option value="events">Co-création événements</option>
+            <option value="full">Accès complet partenaire</option>
+          </select>
+        </div>
+        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="pt-notes" placeholder="Informations..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-partner')">Annuler</button>
+      <button class="btn btn-yellow" onclick="savePartner()">Créer le partenaire</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============ STATE ============
+const STATE = {
+  posts: JSON.parse(localStorage.getItem('eb80_posts')||'[]'),
+  events: JSON.parse(localStorage.getItem('eb80_events')||'[]'),
+  fans: JSON.parse(localStorage.getItem('eb80_fans')||'[]'),
+  partners: JSON.parse(localStorage.getItem('eb80_partners')||'[]'),
+  media: JSON.parse(localStorage.getItem('eb80_media')||'[]'),
+  scheduled: JSON.parse(localStorage.getItem('eb80_scheduled')||'[]'),
+};
+
+// Seed data if empty
+if(!STATE.posts.length) {
+  STATE.posts = [
+    {id:1,title:"Concert Brasserie du Pilat",type:"event",audience:"all",body:"Ce soir 21h - St Julien Molin Molette",networks:["Facebook","Instagram"],date:"2026-04-18",status:"published",author:"Admin"},
+    {id:2,title:"Nouveau titre disponible",type:"news",audience:"all",body:"Écoutez notre dernier son sur SoundCloud",networks:["Facebook","Instagram"],date:"2026-04-10",status:"published",author:"Admin"},
+    {id:3,title:"Photos exclusives backstage",type:"exclusive",audience:"fans",body:"Accès VIP aux coulisses",networks:[],date:"2026-04-05",status:"published",author:"Admin"},
+    {id:4,title:"Kit presse 2026",type:"press",audience:"partners",body:"Bio, photos HD, rider technique",networks:[],date:"2026-03-20",status:"published",author:"Admin"},
+  ];
+  save('posts');
+}
+if(!STATE.events.length) {
+  STATE.events = [
+    {id:1,name:"Brasserie du Pilat",date:"2026-04-18",time:"21:00",venue:"Brasserie du Pilat",city:"St Julien Molin Molette, FR",tickets:"",desc:"",status:"upcoming"},
+    {id:2,name:"Concert Lyon",date:"2026-05-15",time:"20:30",venue:"Le Périscope",city:"Lyon, FR",tickets:"",desc:"",status:"upcoming"},
+    {id:3,name:"Festival Été",date:"2026-07-10",time:"22:00",venue:"TBA",city:"France",tickets:"",desc:"",status:"tba"},
+  ];
+  save('events');
+}
+if(!STATE.fans.length) {
+  STATE.fans = [
+    {id:1,name:"Marie D.",email:"marie@mail.com",joined:"2025-11-10",subs:["alerts","exclusive"],status:"active"},
+    {id:2,name:"Julien M.",email:"julien@mail.com",joined:"2026-01-22",subs:["alerts"],status:"active"},
+    {id:3,name:"Sophie L.",email:"sophie@mail.com",joined:"2026-02-14",subs:["exclusive","alerts"],status:"active"},
+    {id:4,name:"Marc B.",email:"marc@mail.com",joined:"2026-03-01",subs:[],status:"inactive"},
+  ];
+  save('fans');
+}
+if(!STATE.partners.length) {
+  STATE.partners = [
+    {id:1,name:"Brasserie du Pilat",type:"Salle de concert",email:"contact@brasserie-pilat.fr",since:"2025-09-01",access:"events",status:"active"},
+    {id:2,name:"La Grosse Radio",type:"Média",email:"contact@lagrosseradio.com",since:"2025-12-15",access:"press",status:"active"},
+    {id:3,name:"Lyon Concerts",type:"Booking",email:"booking@lyonconcerts.fr",since:"2026-01-10",access:"full",status:"active"},
+  ];
+  save('partners');
+}
+
+function save(key) {
+  localStorage.setItem('eb80_'+key, JSON.stringify(STATE[key]));
+}
+
+// ============ NAVIGATION ============
+const pageTitles = {
+  dashboard:'// DASHBOARD', content:'// CONTENU', events:'// ÉVÉNEMENTS',
+  media:'// MÉDIATHÈQUE', publish:'// PUBLICATION RS', fans:'// FANS',
+  partners:'// PARTENAIRES', messages:'// MESSAGES', settings:'// PARAMÈTRES'
+};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes("'"+id+"'")) n.classList.add('active'); });
+  document.getElementById('page-title').textContent = pageTitles[id]||'';
+  renderPage(id);
+}
+
+function renderPage(id) {
+  if(id==='dashboard') renderDashboard();
+  if(id==='content') renderContent();
+  if(id==='events') renderEvents();
+  if(id==='fans') renderFans();
+  if(id==='partners') renderPartners();
+  if(id==='media') renderMedia();
+  if(id==='publish') renderPublish();
+  if(id==='messages') renderMessages();
+  if(id==='settings') renderSettings();
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  document.getElementById('stat-fans').textContent = STATE.fans.length;
+  document.getElementById('stat-events').textContent = STATE.events.filter(e=>e.status==='upcoming').length;
+  document.getElementById('stat-partners').textContent = STATE.partners.length;
+  document.getElementById('stat-posts').textContent = STATE.posts.filter(p=>p.status==='published').length;
+
+  // Mini charts
+  ['fans','events','partners','posts'].forEach(k=>{
+    const el = document.getElementById('chart-'+k);
+    if(!el) return;
+    const vals = [20,35,28,42,38,55,60,48,70,65,80,STATE[k]?.length||10].map(v=>Math.max(v,5));
+    el.innerHTML = vals.map(v=>`<div class="mini-bar" style="height:${v}%;animation-delay:${Math.random()*0.5}s"></div>`).join('');
+  });
+
+  // Activity feed
+  const activities = [
+    {color:'var(--pink)',text:'<strong>Nouveau fan</strong> — Sophie L. vient de s\'inscrire',time:'Il y a 2h'},
+    {color:'var(--yellow)',text:'<strong>Post publié</strong> — "Concert Brasserie du Pilat" sur Facebook & Instagram',time:'Il y a 4h'},
+    {color:'var(--blue)',text:'<strong>Partenaire</strong> — Lyon Concerts a accédé au kit presse',time:'Il y a 1j'},
+    {color:'var(--cyan)',text:'<strong>Message reçu</strong> — Demande de booking de "Festival Été"',time:'Il y a 2j'},
+    {color:'var(--pink)',text:'<strong>+12 fans</strong> cette semaine suite au post Instagram',time:'Il y a 3j'},
+  ];
+  document.getElementById('activity-feed').innerHTML = activities.map(a=>`
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${a.color}"></div>
+      <div class="activity-content">${a.text}</div>
+      <div class="activity-time">${a.time}</div>
+    </div>`).join('');
+
+  // Upcoming events widget
+  const upcoming = STATE.events.filter(e=>e.status==='upcoming').slice(0,3);
+  document.getElementById('upcoming-events-widget').innerHTML = upcoming.map(e=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+      <span class="schedule-dot" style="background:var(--yellow)"></span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${e.name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${e.date} · ${e.time} · ${e.city}</div>
+      </div>
+      <span class="badge badge-yellow">${e.status==='upcoming'?'PRÉVU':'TBA'}</span>
+    </div>`).join('');
+
+  // Posts table
+  document.getElementById('posts-tbody').innerHTML = STATE.posts.slice(0,5).map(p=>postRow(p)).join('');
+}
+
+function postRow(p) {
+  const netBadges = p.networks.map(n=>`<span class="badge badge-blue" style="margin-right:3px;font-size:11px">${n}</span>`).join('');
+  const statusBadge = p.status==='published'?'<span class="badge badge-green">Publié</span>':'<span class="badge badge-gray">Brouillon</span>';
+  const typeBadge = {event:'badge-pink',news:'badge-blue',exclusive:'badge-yellow',press:'badge-gray',post:'badge-blue'}[p.type]||'badge-gray';
+  return `<tr>
+    <td><strong>${p.title}</strong></td>
+    <td><span class="badge ${typeBadge}">${p.type}</span></td>
+    <td>${netBadges||'<span style="color:var(--muted)">Aucun</span>'}</td>
+    <td style="color:var(--muted)">${p.date}</td>
+    <td>${statusBadge}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="editPost(${p.id})">Éditer</button></td>
+  </tr>`;
+}
+
+// ============ CONTENT ============
+function renderContent() {
+  document.getElementById('content-tbody').innerHTML = STATE.posts.map(p=>`
+    <tr>
+      <td><strong>${p.title}</strong><br><span style="font-size:10px;color:var(--muted)">${p.body?.substring(0,50)}...</span></td>
+      <td><span class="badge badge-blue">${p.type}</span></td>
+      <td style="color:var(--muted)">${p.author||'Admin'}</td>
+      <td>${p.networks.map(n=>`<span class="badge badge-blue" style="font-size:11px;margin-right:2px">${n}</span>`).join('')||'—'}</td>
+      <td style="color:var(--muted)">${p.date}</td>
+      <td>${p.status==='published'?'<span class="badge badge-green">Publié</span>':'<span class="badge badge-gray">Brouillon</span>'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editPost(${p.id})">Éditer</button>
+        <button class="btn btn-sm" style="border-color:var(--pink);color:var(--pink);background:transparent" onclick="deletePost(${p.id})">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ============ EVENTS ============
+function renderEvents() {
+  document.getElementById('events-list').innerHTML = STATE.events.map(e=>`
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span class="schedule-dot" style="background:${e.status==='upcoming'?'var(--yellow)':'var(--muted)'}"></span>
+          <div>
+            <div style="font-family:'VT323',monospace;font-size:20px;letter-spacing:2px">${e.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${e.date} · ${e.time} · ${e.venue} · ${e.city}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge ${e.status==='upcoming'?'badge-yellow':'badge-gray'}">${e.status==='upcoming'?'PRÉVU':'TBA'}</span>
+          <button class="btn btn-ghost btn-sm">Éditer</button>
+          <button class="btn btn-sm" style="border-color:var(--pink);color:var(--pink);background:transparent" onclick="deleteEvent(${e.id})">✕</button>
+        </div>
+      </div>
+      ${e.desc?`<div class="card-body" style="font-size:12px;color:var(--muted)">${e.desc}</div>`:''}
+    </div>`).join('');
+}
+
+// ============ FANS ============
+function renderFans() {
+  document.getElementById('fans-total').textContent = STATE.fans.length;
+  document.getElementById('fans-tbody').innerHTML = STATE.fans.map(f=>`
+    <tr>
+      <td><div class="user-row"><div class="avatar">${f.name[0]}</div><strong>${f.name}</strong></div></td>
+      <td style="color:var(--muted)">${f.email}</td>
+      <td style="color:var(--muted)">${f.joined}</td>
+      <td>${f.subs.map(s=>`<span class="badge badge-blue" style="font-size:11px;margin-right:2px">${s}</span>`).join('')||'—'}</td>
+      <td>${f.status==='active'?'<span class="badge badge-green">Actif</span>':'<span class="badge badge-gray">Inactif</span>'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="showToast('Email envoyé à '+${JSON.stringify(f.email)},'success')">Contacter</button></td>
+    </tr>`).join('');
+}
+
+// ============ PARTNERS ============
+function renderPartners() {
+  const accessLabels = {stats:'Stats',press:'Kit Presse',events:'Co-événements',full:'Accès complet'};
+  document.getElementById('partners-tbody').innerHTML = STATE.partners.map(p=>`
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="badge badge-blue">${p.type}</span></td>
+      <td style="color:var(--muted)">${p.email}</td>
+      <td style="color:var(--muted)">${p.since}</td>
+      <td><span class="badge badge-yellow">${accessLabels[p.access]||p.access}</span></td>
+      <td><span class="badge badge-green">Actif</span></td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm">Éditer</button>
+        <button class="btn btn-sm" style="border-color:var(--pink);color:var(--pink);background:transparent" onclick="deletePartner(${p.id})">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ============ MEDIA ============
+function renderMedia() {
+  const grid = document.getElementById('media-grid');
+  const empty = document.getElementById('media-empty');
+  if(!STATE.media.length) { grid.style.display='none'; empty.style.display='block'; return; }
+  empty.style.display='none'; grid.style.display='grid';
+  grid.innerHTML = STATE.media.map((m,i)=>`
+    <div style="position:relative;overflow:hidden;border:2px solid var(--border);aspect-ratio:1">
+      <img src="${m.src}" style="width:100%;height:100%;object-fit:cover;display:block">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);opacity:0;transition:opacity 0.2s;display:flex;align-items:center;justify-content:center;gap:8px"
+           onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+        <button class="btn btn-yellow btn-sm" onclick="useInPost(${i})">Utiliser</button>
+      </div>
+    </div>`).join('');
+}
+
+function handleBulkUpload(input) {
+  const files = Array.from(input.files);
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      STATE.media.push({src:e.target.result, name:f.name, date:new Date().toISOString().split('T')[0]});
+      save('media'); renderMedia();
+    };
+    reader.readAsDataURL(f);
+  });
+  showToast(`${files.length} fichier(s) uploadé(s) ✓`,'success');
+}
+
+// ============ PUBLISH ============
+function renderPublish() {
+  const sched = document.getElementById('scheduled-posts');
+  const hist = document.getElementById('rs-history');
+  if(!STATE.scheduled.length) {
+    sched.innerHTML = '<div style="color:var(--muted);font-family:\'VT323\',monospace;font-size:16px;letter-spacing:2px;padding:10px 0">Aucun post programmé</div>';
+  } else {
+    sched.innerHTML = STATE.scheduled.map((s,i)=>`
+      <div style="padding:12px;border:2px solid var(--yellow);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:'VT323',monospace;font-size:16px;color:var(--yellow)">${s.date}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.text?.substring(0,40)}... · ${s.networks?.join(', ')}</div>
+        </div>
+        <button class="btn btn-sm" style="border-color:var(--pink);color:var(--pink);background:transparent" onclick="STATE.scheduled.splice(${i},1);save('scheduled');renderPublish()">✕</button>
+      </div>`).join('');
+  }
+
+  const rsHistory = [
+    {text:"Concert ce soir! Brasserie du Pilat",networks:["Facebook","Instagram"],date:"2026-04-18 10:00",reach:"1.2k"},
+    {text:"Nouveau son disponible sur SoundCloud",networks:["Facebook"],date:"2026-04-10 15:30",reach:"847"},
+    {text:"Photos backstage 🎸",networks:["Instagram"],date:"2026-04-05 20:00",reach:"2.1k"},
+  ];
+  hist.innerHTML = rsHistory.map(h=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;margin-bottom:4px">${h.text}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>${h.networks.map(n=>`<span class="badge badge-blue" style="font-size:11px;margin-right:3px">${n}</span>`).join('')}</div>
+        <div style="font-size:10px;color:var(--muted)">${h.date} · <span style="color:#00ff88">↑ ${h.reach} vues</span></div>
+      </div>
+    </div>`).join('');
+}
+
+// ============ MESSAGES ============
+function renderMessages() {
+  const msgs = [
+    {from:"Festival Été Organizers",email:"booking@fest-ete.fr",type:"Booking",msg:"Bonjour, nous sommes intéressés par un concert en juillet...",date:"2026-04-16",read:false},
+    {from:"Radio Locale FM",email:"prog@radiolocale.fr",type:"Média",msg:"Interview possible pour notre émission musicale?",date:"2026-04-14",read:true},
+    {from:"Marie D. (Fan)",email:"marie@mail.com",type:"Fan",msg:"Super concert hier soir ! Merci 🎸",date:"2026-04-18",read:false},
+  ];
+  document.getElementById('messages-list').innerHTML = msgs.map(m=>`
+    <div class="card" style="margin-bottom:10px;border-left:4px solid ${m.read?'var(--border)':'var(--pink)'}">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <strong>${m.from}</strong>
+            <span class="badge badge-blue" style="margin-left:8px;font-size:11px">${m.type}</span>
+            ${!m.read?'<span class="badge badge-pink" style="margin-left:4px;font-size:11px">NOUVEAU</span>':''}
+          </div>
+          <div style="font-size:10px;color:var(--muted)">${m.date}</div>
+        </div>
+        <div style="font-size:12px;color:#bbb;margin-bottom:12px">${m.msg}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-yellow btn-sm" onclick="showToast('Réponse envoyée à ${m.from}','success')">Répondre</button>
+          <button class="btn btn-ghost btn-sm">Archiver</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ============ SETTINGS ============
+function renderSettings() {
+  const rs = [
+    {name:'Facebook',icon:'📘',connected:true,handle:'@Electroboy80'},
+    {name:'Instagram',icon:'📸',connected:true,handle:'@electroboy80'},
+    {name:'TikTok',icon:'🎵',connected:false,handle:''},
+    {name:'YouTube',icon:'▶️',connected:false,handle:''},
+    {name:'Spotify',icon:'🎧',connected:false,handle:''},
+  ];
+  document.getElementById('rs-connections').innerHTML = rs.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">${r.icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700">${r.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${r.connected?r.handle:'Non connecté'}</div>
+        </div>
+      </div>
+      <button class="btn btn-sm ${r.connected?'btn-ghost':'btn-yellow'}" onclick="showToast('${r.connected?'Déconnexion de':'Connexion à'} ${r.name}...','info')">
+        ${r.connected?'Déconnecter':'Connecter'}
+      </button>
+    </div>`).join('');
+}
+
+// ============ MODALS ============
+function openModal(id) {
+  document.getElementById('modal-'+id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById('modal-'+id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+function saveContent(status) {
+  const title = document.getElementById('nc-title').value.trim();
+  if(!title) { showToast('Titre requis !','error'); return; }
+  const networks = [];
+  document.querySelectorAll('#modal-new-content .rs-toggle.active .rs-name').forEach(el=>networks.push(el.textContent));
+  const post = {
+    id: Date.now(), title,
+    type: document.getElementById('nc-type').value,
+    audience: document.getElementById('nc-audience').value,
+    body: document.getElementById('nc-body').value,
+    networks, date: new Date().toISOString().split('T')[0],
+    status, author:'Admin'
+  };
+  STATE.posts.unshift(post); save('posts');
+  closeModal('new-content');
+  showToast(status==='published'?'Contenu publié ✓ 🚀':'Brouillon sauvegardé ✓', status==='published'?'success':'info');
+  renderDashboard();
+}
+
+function saveEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  if(!name) { showToast('Nom requis !','error'); return; }
+  const ev = {
+    id: Date.now(),
+    name, date: document.getElementById('ev-date').value,
+    time: document.getElementById('ev-time').value,
+    venue: document.getElementById('ev-venue').value,
+    city: document.getElementById('ev-city').value,
+    tickets: document.getElementById('ev-tickets').value,
+    desc: document.getElementById('ev-desc').value,
+    status:'upcoming'
+  };
+  STATE.events.push(ev); save('events');
+  closeModal('new-event');
+  showToast('Événement créé et publié ✓ 🎸','success');
+  renderEvents();
+}
+
+function savePartner() {
+  const name = document.getElementById('pt-name').value.trim();
+  if(!name) { showToast('Nom requis !','error'); return; }
+  const p = {
+    id: Date.now(), name,
+    type: document.getElementById('pt-type').value,
+    email: document.getElementById('pt-email').value,
+    access: document.getElementById('pt-access').value,
+    notes: document.getElementById('pt-notes').value,
+    since: new Date().toISOString().split('T')[0],
+    status:'active'
+  };
+  STATE.partners.push(p); save('partners');
+  closeModal('new-partner');
+  showToast('Partenaire ajouté ✓','success');
+  renderPartners();
+}
+
+function deletePost(id) {
+  STATE.posts = STATE.posts.filter(p=>p.id!==id); save('posts');
+  showToast('Contenu supprimé','info'); renderContent(); renderDashboard();
+}
+function deleteEvent(id) {
+  STATE.events = STATE.events.filter(e=>e.id!==id); save('events');
+  showToast('Événement supprimé','info'); renderEvents();
+}
+function deletePartner(id) {
+  STATE.partners = STATE.partners.filter(p=>p.id!==id); save('partners');
+  showToast('Partenaire supprimé','info'); renderPartners();
+}
+function editPost(id) { showToast('Éditeur en cours de développement...','info'); }
+
+// ============ PUBLISH ============
+function toggleRS(el) { el.classList.toggle('active'); }
+
+function publishNow() {
+  const text = document.getElementById('rs-text').value.trim();
+  if(!text) { showToast('Le message est vide !','error'); return; }
+  const active = [...document.querySelectorAll('#page-publish .rs-toggle.active .rs-name')].map(e=>e.textContent);
+  if(!active.length) { showToast('Sélectionne au moins 1 réseau !','error'); return; }
+  const post = {id:Date.now(),title:text.substring(0,40)+'...', type:'post', audience:'all', body:text, networks:active, date:new Date().toISOString().split('T')[0], status:'published', author:'Admin'};
+  STATE.posts.unshift(post); save('posts');
+  document.getElementById('rs-text').value='';
+  document.getElementById('rs-preview').style.display='none';
+  showToast(`Publié sur ${active.join(', ')} ✓ 🚀`,'success');
+  renderPublish();
+}
+
+function schedulePost() {
+  const text = document.getElementById('rs-text').value.trim();
+  const dt = document.getElementById('rs-schedule').value;
+  if(!text) { showToast('Message vide !','error'); return; }
+  if(!dt) { showToast('Choisissez une date/heure !','error'); return; }
+  const active = [...document.querySelectorAll('#page-publish .rs-toggle.active .rs-name')].map(e=>e.textContent);
+  STATE.scheduled.push({id:Date.now(),text,date:dt,networks:active});
+  save('scheduled');
+  document.getElementById('rs-text').value='';
+  showToast(`Post programmé pour le ${dt} ✓`,'success');
+  renderPublish();
+}
+
+function previewRsImage(input) {
+  const f = input.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = e => { const img = document.getElementById('rs-preview'); img.src=e.target.result; img.style.display='block'; };
+  reader.readAsDataURL(f);
+}
+
+function previewModalMedia(input) {
+  const container = document.getElementById('modal-media-previews');
+  Array.from(input.files).forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = e => { container.innerHTML+=`<img src="${e.target.result}" class="media-thumb">`; };
+    reader.readAsDataURL(f);
+  });
+}
+
+function useInPost(i) { showToast('Média sélectionné pour publication','info'); showPage('publish'); }
+
+function exportCSV(type) {
+  const data = STATE[type];
+  if(!data.length) { showToast('Aucune donnée à exporter','error'); return; }
+  const keys = Object.keys(data[0]);
+  const csv = [keys.join(','), ...data.map(d=>keys.map(k=>JSON.stringify(d[k]||'')).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = `eb80_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast(`Export CSV ${type} téléchargé ✓`,'success');
+}
+
+// ============ TOAST ============
+function showToast(msg, type='info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${{success:'✓',error:'✕',info:'ℹ'}[type]||'ℹ'}</span> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(()=>{ toast.style.opacity='0'; toast.style.transform='translateX(20px)'; toast.style.transition='all 0.3s'; setTimeout(()=>toast.remove(),300); }, 3000);
+}
+
+// ============ INIT ============
+renderDashboard();
+</script>
+</body>
+</html>
