@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ELECTROBOY 80 — Official</title>
+<meta name="description" content="Guitar Hero Tout Terrain. New Wave réorchestré. 170 BPM. Cheap. Primitif. Sauvage.">
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Anton&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--pink:#FF006E;--yellow:#FFFF00;--blue:#00B4FF;--cyan:#00FFFF;--black:#000;--dark:#0a0a0a;--mid:#111;--white:#F0F0F0;--muted:#555;}
@@ -167,6 +168,79 @@ footer{padding:40px 55px;display:flex;align-items:center;justify-content:space-b
   .event-actions{flex-wrap:wrap;}
 }
 </style>
+<script>
+// Charge les textes depuis l'API Railway si disponible,
+// sinon utilise les textes par défaut ou ceux sauvegardés localement par l'admin
+const API_URL = window.EB80_API || ''; // Remplacer par l'URL Railway ex: 'https://electroboy80.railway.app'
+
+async function loadSettings() {
+  // 1. Essayer l'API Railway
+  if (API_URL) {
+    try {
+      const res = await fetch(API_URL + '/api/settings');
+      if (res.ok) {
+        const { values } = await res.json();
+        applySettings(values);
+        return;
+      }
+    } catch(e) { console.log('API non disponible, fallback local'); }
+  }
+  // 2. Fallback : textes sauvegardés par l'admin localement
+  const local = localStorage.getItem('eb80_landing');
+  if (local) applySettings(JSON.parse(local));
+  // 3. Sinon les textes hardcodés dans le HTML restent
+}
+
+function applySettings(s) {
+  if (!s) return;
+  // Hero
+  if (s.hero_badge)    setText('dyn-hero-badge', s.hero_badge);
+  if (s.hero_tagline)  setText('dyn-hero-tagline', s.hero_tagline);
+  if (s.hero_btn1_text) setText('dyn-btn1', s.hero_btn1_text);
+  if (s.hero_btn2_text) setText('dyn-btn2', s.hero_btn2_text);
+  // Bio
+  if (s.bio_title)     setText('dyn-bio-title', s.bio_title);
+  if (s.bio_body)      setHTML('dyn-bio-body', formatBio(s.bio_body));
+  // Manifesto
+  if (s.manifesto_quote) setHTML('dyn-manifesto', formatManifesto(s.manifesto_quote));
+  if (s.manifesto_attr)  setText('dyn-manifesto-attr', '— ' + s.manifesto_attr);
+  // Fan zone
+  if (s.fanzone_title) setText('dyn-fanzone-title', s.fanzone_title);
+  if (s.fanzone_body)  setText('dyn-fanzone-body', s.fanzone_body);
+  if (s.fanzone_perk1) setPerk('dyn-perk1', s.fanzone_perk1);
+  if (s.fanzone_perk2) setPerk('dyn-perk2', s.fanzone_perk2);
+  if (s.fanzone_perk3) setPerk('dyn-perk3', s.fanzone_perk3);
+  if (s.fanzone_perk4) setPerk('dyn-perk4', s.fanzone_perk4);
+  // SEO
+  if (s.seo_title)       document.title = s.seo_title;
+  if (s.seo_description) { let m = document.querySelector('meta[name="description"]'); if(m) m.content = s.seo_description; }
+  // Links
+  const links = { 'dyn-link-fb': s.link_facebook, 'dyn-link-sc': s.link_soundcloud, 'dyn-link-radio': s.link_radio };
+  for (const [id, href] of Object.entries(links)) {
+    document.querySelectorAll('.' + id).forEach(el => { if(href) el.href = href; });
+  }
+  if (s.link_email) document.querySelectorAll('.dyn-link-email').forEach(el => { el.href = 'mailto:' + s.link_email; el.textContent = s.link_email; });
+}
+
+function setText(id, text) { const el = document.getElementById(id); if(el) el.textContent = text; }
+function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
+function setPerk(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const parts = text.split(' — ');
+  el.innerHTML = `<span class="perk-title">${parts[0]||''}</span>${parts[1]||''}`;
+}
+function formatBio(text) {
+  // *mot* → <em>mot</em>, et double saut de ligne → <br><br>
+  return text.replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n\n/g, '<br><br>');
+}
+function formatManifesto(text) {
+  // Mots en majuscules ou entre guillemets mis en évidence
+  return '"' + text.replace(/\b(vite|fort|rock\'n\'roll|2080|primitif|sauvage|cheap)\b/gi, '<em>$1</em>') + '"';
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+</script>
 </head>
 <body>
 
@@ -184,17 +258,17 @@ footer{padding:40px 55px;display:flex;align-items:center;justify-content:space-b
 <!-- HERO -->
 <section class="hero">
   <div class="hero-left">
-    <div class="live-badge"><div class="dot"></div> GUITAR HERO TOUT TERRAIN</div>
+    <div class="live-badge"><div class="dot"></div> <span id="dyn-hero-badge">GUITAR HERO TOUT TERRAIN</span></div>
     <h1 class="main-title">
       <span class="t-electro">ELECTRO</span>
       <span class="t-boy">BOY</span>
       <span class="t-80">80</span>
     </h1>
-    <p class="hero-tagline">Guitare saturée · Voix des cavernes<br>170 BPM · Cheap. Primitif. Sauvage.</p>
+    <p class="hero-tagline" id="dyn-hero-tagline">Guitare saturée · Voix des cavernes<br>170 BPM · Cheap. Primitif. Sauvage.</p>
     <div class="hero-buttons">
-      <a href="#concerts" class="btn btn-yellow">◈ Concerts</a>
-      <a href="portal.html" class="btn btn-pink">♦ Espace Fans</a>
-      <a href="https://soundcloud.com/djelectroboy" target="_blank" class="btn btn-ghost">↗ SoundCloud</a>
+      <a href="#concerts" class="btn btn-yellow" id="dyn-btn1">◈ Concerts</a>
+      <a href="portal.html" class="btn btn-pink" id="dyn-btn2">♦ Espace Fans</a>
+      <a href="https://soundcloud.com/djelectroboy" target="_blank" class="btn btn-ghost dyn-link-sc">↗ SoundCloud</a>
     </div>
   </div>
   <div class="hero-right">
@@ -277,8 +351,8 @@ footer{padding:40px 55px;display:flex;align-items:center;justify-content:space-b
 <section class="about-section" id="about">
   <div class="about-text">
     <div class="section-tag">// Bio</div>
-    <div class="section-title" style="font-size:clamp(32px,4vw,56px)">Un homme.<br>Un Mac.<br>Une guitare.</div>
-    <p class="about-body">
+    <div class="section-title" style="font-size:clamp(32px,4vw,56px)" id="dyn-bio-title">Un homme.<br>Un Mac.<br>Une guitare.</div>
+    <p class="about-body" id="dyn-bio-body">
       Seul sur scène, <em>ELECTROBOY 80</em> revisite les tubes new wave
       des années 80 — The Cure, Kraftwerk, Soft Cell, B52's, PIL,
       Taxi Girl, Kim Wilde, Lio — et les réorchestre à base de
@@ -318,37 +392,25 @@ footer{padding:40px 55px;display:flex;align-items:center;justify-content:space-b
 
 <!-- MANIFESTO -->
 <div class="manifesto">
-  <p class="mq">"Ça joue <em>vite</em>, fort — c'est le <em>rock'n'roll</em> des années <em>2080</em>"</p>
-  <p class="mq-attr">— Electroboy 80 · Cheap. Primitif. Sauvage.</p>
+  <p class="mq" id="dyn-manifesto">"Ça joue <em>vite</em>, fort — c'est le <em>rock'n'roll</em> des années <em>2080</em>"</p>
+  <p class="mq-attr" id="dyn-manifesto-attr">— Electroboy 80 · Cheap. Primitif. Sauvage.</p>
 </div>
 
 <!-- FAN ZONE -->
 <section class="fan-zone" id="fanzone">
   <div class="fan-zone-text">
-    <div class="big-text">REJOINS<br>LA <span>ZONE</span></div>
-    <p>Inscris-toi gratuitement pour recevoir les alertes concerts, accéder au contenu exclusif et suivre l'actu ELECTROBOY 80 en avant-première.</p>
+    <div class="big-text" id="dyn-fanzone-title">REJOINS<br>LA <span>ZONE</span></div>
+    <p id="dyn-fanzone-body">Inscris-toi gratuitement pour recevoir les alertes concerts, accéder au contenu exclusif et suivre l'actu ELECTROBOY 80 en avant-première.</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <a href="portal.html" class="btn btn-yellow">▶ S'inscrire gratuitement</a>
       <a href="portal.html" class="btn btn-ghost">Se connecter</a>
     </div>
   </div>
   <div class="fan-perks">
-    <div class="perk">
-      <div class="perk-icon">🔔</div>
-      <div class="perk-text"><span class="perk-title">Alertes concerts</span>Sois le premier prévenu des nouvelles dates</div>
-    </div>
-    <div class="perk">
-      <div class="perk-icon">★</div>
-      <div class="perk-text"><span class="perk-title">Contenu exclusif</span>Photos backstage, demos, setlists</div>
-    </div>
-    <div class="perk">
-      <div class="perk-icon">♦</div>
-      <div class="perk-text"><span class="perk-title">Communauté fans</span>Réagis aux posts, partage tes retours</div>
-    </div>
-    <div class="perk">
-      <div class="perk-icon">🤝</div>
-      <div class="perk-text"><span class="perk-title">Espace partenaires</span>Kit presse, stats, propositions de booking</div>
-    </div>
+    <div class="perk"><div class="perk-icon">🔔</div><div class="perk-text" id="dyn-perk1"><span class="perk-title">Alertes concerts</span>Sois le premier prévenu des nouvelles dates</div></div>
+    <div class="perk"><div class="perk-icon">★</div><div class="perk-text" id="dyn-perk2"><span class="perk-title">Contenu exclusif</span>Photos backstage, demos, setlists</div></div>
+    <div class="perk"><div class="perk-icon">♦</div><div class="perk-text" id="dyn-perk3"><span class="perk-title">Communauté fans</span>Réagis aux posts, partage tes retours</div></div>
+    <div class="perk"><div class="perk-icon">🤝</div><div class="perk-text" id="dyn-perk4"><span class="perk-title">Espace partenaires</span>Kit presse, stats, propositions de booking</div></div>
   </div>
 </section>
 
@@ -356,10 +418,10 @@ footer{padding:40px 55px;display:flex;align-items:center;justify-content:space-b
 <footer>
   <div class="footer-logo">ELECTRO<span>BOY</span>80</div>
   <div class="footer-links">
-    <a href="https://www.facebook.com/Electroboy80/" class="footer-link" target="_blank">Facebook</a>
-    <a href="https://soundcloud.com/djelectroboy" class="footer-link" target="_blank">SoundCloud</a>
-    <a href="https://www.lagrosseradio.com/artistes/electroboy80" class="footer-link" target="_blank">Grosse Radio</a>
-    <a href="mailto:jacques.toinard@sfr.fr" class="footer-link">Contact</a>
+    <a href="https://www.facebook.com/Electroboy80/" class="footer-link dyn-link-fb" target="_blank">Facebook</a>
+    <a href="https://soundcloud.com/djelectroboy" class="footer-link dyn-link-sc" target="_blank">SoundCloud</a>
+    <a href="https://www.lagrosseradio.com/artistes/electroboy80" class="footer-link dyn-link-radio" target="_blank">Grosse Radio</a>
+    <a href="mailto:jacques.toinard@sfr.fr" class="footer-link dyn-link-email">Contact</a>
   </div>
   <div class="footer-copy">© 2026 ELECTROBOY 80 · Guitar Hero Tout Terrain · Cheap. Primitif. Sauvage.</div>
   <a href="admin.html" class="footer-admin">⚙ admin</a>

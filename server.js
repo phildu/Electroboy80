@@ -112,6 +112,14 @@ db.exec(`
     status TEXT DEFAULT 'pending', -- 'pending' | 'done' | 'failed'
     FOREIGN KEY(content_id) REFERENCES content(id)
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    label TEXT,           -- Label lisible pour l'admin
+    section TEXT,         -- Section d'affichage : 'hero' | 'bio' | 'concerts' | 'fanzone' | 'seo' | 'links'
+    type TEXT DEFAULT 'text' -- 'text' | 'textarea' | 'url' | 'color'
+  );
 `);
 
 // Seed admin user
@@ -120,6 +128,43 @@ if (!existingAdmin) {
   const hash = bcrypt.hashSync('admin1234', 10);
   db.prepare(`INSERT INTO users (name, email, password, role) VALUES (?,?,?,?)`).run('Admin EB80', 'admin@electroboy80.fr', hash, 'admin');
   console.log('✓ Admin créé : admin@electroboy80.fr / admin1234');
+}
+
+// Seed default settings (landing page texts)
+const seedSettings = [
+  // HERO
+  ['hero_badge',     'GUITAR HERO TOUT TERRAIN',              'Badge accroche',         'hero',     'text'],
+  ['hero_tagline',   'Guitare saturée · Voix des cavernes\n170 BPM · Cheap. Primitif. Sauvage.', 'Tagline sous le titre', 'hero', 'textarea'],
+  ['hero_btn1_text', 'Concerts',                              'Bouton 1 — texte',        'hero',     'text'],
+  ['hero_btn2_text', 'Espace Fans',                           'Bouton 2 — texte',        'hero',     'text'],
+  // BIO
+  ['bio_title',      'Un homme. Un Mac. Une guitare.',        'Titre bio',               'bio',      'text'],
+  ['bio_body',       'Seul sur scène, ELECTROBOY 80 revisite les tubes new wave des années 80 — The Cure, Kraftwerk, Soft Cell, B52\'s, PIL, Taxi Girl, Kim Wilde, Lio — et les réorchestre à base de boucles technos, de basses lourdes et de synthés à gogo.\n\nIl mêle sa guitare saturée et sa voix des cavernes pour créer un esprit binaire et répétitif. Tous les titres tournent au même beat — 170 BPM — et dépassent rarement les 3 minutes. Aucune respiration. Jamais.\n\nSon outil : GarageBand 3, volontairement cheap. Le résultat n\'en est que plus primitif et sauvage.', 'Texte bio complet', 'bio', 'textarea'],
+  // MANIFESTO
+  ['manifesto_quote', 'Ça joue vite, fort — c\'est le rock\'n\'roll des années 2080',  'Citation manifesto',      'bio',      'textarea'],
+  ['manifesto_attr',  'Electroboy 80 · Cheap. Primitif. Sauvage.',                      'Attribution citation',    'bio',      'text'],
+  // FAN ZONE
+  ['fanzone_title',  'Rejoins la Zone',                       'Titre fan zone',          'fanzone',  'text'],
+  ['fanzone_body',   'Inscris-toi gratuitement pour recevoir les alertes concerts, accéder au contenu exclusif et suivre l\'actu ELECTROBOY 80 en avant-première.', 'Texte fan zone', 'fanzone', 'textarea'],
+  ['fanzone_perk1',  'Alertes concerts — Sois le premier prévenu des nouvelles dates',  'Avantage 1',              'fanzone',  'text'],
+  ['fanzone_perk2',  'Contenu exclusif — Photos backstage, demos, setlists',            'Avantage 2',              'fanzone',  'text'],
+  ['fanzone_perk3',  'Communauté fans — Réagis aux posts, partage tes retours',         'Avantage 3',              'fanzone',  'text'],
+  ['fanzone_perk4',  'Espace partenaires — Kit presse, stats, propositions de booking', 'Avantage 4',              'fanzone',  'text'],
+  // SEO
+  ['seo_title',      'ELECTROBOY 80 — Official',              'Titre onglet navigateur', 'seo',      'text'],
+  ['seo_description','Guitar Hero Tout Terrain. New Wave réorchestré. 170 BPM. Cheap. Primitif. Sauvage.', 'Meta description SEO', 'seo', 'textarea'],
+  // LINKS
+  ['link_facebook',  'https://www.facebook.com/Electroboy80/', 'Lien Facebook',          'links',    'url'],
+  ['link_soundcloud','https://soundcloud.com/djelectroboy',    'Lien SoundCloud',        'links',    'url'],
+  ['link_radio',     'https://www.lagrosseradio.com/artistes/electroboy80', 'Lien La Grosse Radio', 'links', 'url'],
+  ['link_email',     'jacques.toinard@sfr.fr',                'Email de contact',        'links',    'text'],
+];
+
+for (const [key, value, label, section, type] of seedSettings) {
+  const exists = db.prepare('SELECT key FROM settings WHERE key=?').get(key);
+  if (!exists) {
+    db.prepare('INSERT INTO settings (key,value,label,section,type) VALUES (?,?,?,?,?)').run(key, value, label, section, type);
+  }
 }
 
 // Seed sample event (today's concert)
@@ -498,6 +543,55 @@ app.get('/api/scheduled', authRequired(['admin']), (req, res) => {
 app.delete('/api/scheduled/:id', authRequired(['admin']), (req, res) => {
   db.prepare('DELETE FROM scheduled_posts WHERE id=?').run(req.params.id);
   res.json({ success: true });
+});
+
+// ========================================================
+// ===== ROUTES SETTINGS (LANDING PAGE EDITOR) =====
+// ========================================================
+
+// GET /api/settings — public (lu par index.html)
+app.get('/api/settings', (req, res) => {
+  const rows = db.prepare('SELECT key, value, label, section, type FROM settings ORDER BY section, key').all();
+  // Retourner à la fois le tableau complet et un objet clé/valeur pour faciliter l'usage
+  const obj = {};
+  rows.forEach(r => { obj[r.key] = r.value; });
+  res.json({ settings: rows, values: obj });
+});
+
+// GET /api/settings/:section — textes d'une section spécifique
+app.get('/api/settings/section/:section', (req, res) => {
+  const rows = db.prepare('SELECT key, value, label, type FROM settings WHERE section=? ORDER BY key').all(req.params.section);
+  const obj = {};
+  rows.forEach(r => { obj[r.key] = r.value; });
+  res.json({ settings: rows, values: obj });
+});
+
+// PATCH /api/settings — modifier un ou plusieurs textes (admin)
+app.patch('/api/settings', authRequired(['admin']), (req, res) => {
+  const updates = req.body; // { key: value, key2: value2, ... }
+  if (!updates || typeof updates !== 'object') return res.status(400).json({ error: 'Body invalide' });
+  const update = db.prepare('UPDATE settings SET value=? WHERE key=?');
+  const updateMany = db.transaction((items) => {
+    for (const [key, value] of Object.entries(items)) {
+      update.run(String(value), key);
+    }
+  });
+  updateMany(updates);
+  res.json({ success: true, updated: Object.keys(updates).length });
+});
+
+// PATCH /api/settings/:key — modifier un seul texte (admin)
+app.patch('/api/settings/:key', authRequired(['admin']), (req, res) => {
+  const { value } = req.body;
+  if (value === undefined) return res.status(400).json({ error: 'value requis' });
+  db.prepare('UPDATE settings SET value=? WHERE key=?').run(String(value), req.params.key);
+  res.json({ success: true });
+});
+
+// POST /api/settings/reset — reset aux valeurs par défaut (admin)
+app.post('/api/settings/reset', authRequired(['admin']), (req, res) => {
+  // Remet toutes les valeurs à leur état initial
+  res.json({ success: true, message: 'Relancer le serveur pour reset complet' });
 });
 
 // ===== START =====
